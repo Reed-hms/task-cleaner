@@ -203,5 +203,54 @@ class RestoreRoundTripTest(unittest.TestCase):
             R.restore(self.reg, batch)
 
 
+class PathAliasTest(unittest.TestCase):
+    """项目根用别名写法（软链 / 8.3 短名 / `/var`→`/private/var`）时，
+    根内文件仍必须被当作正常内容，不能被误判成越界。"""
+
+    def setUp(self):
+        self.base = tempfile.mkdtemp(prefix="tc-alias-")
+        self.root = os.path.join(self.base, "real")
+        os.makedirs(self.root)
+        make_project(self.root)
+        self.alias = os.path.join(self.base, "alias")
+        try:
+            os.symlink(self.root, self.alias, target_is_directory=True)
+        except (OSError, AttributeError, NotImplementedError):
+            # Windows 普通账户没有创建符号链接的特权，但目录联接（junction）可以，
+            # 效果等价：realpath 会解析到另一套真实路径。
+            try:
+                import subprocess
+                subprocess.run(["cmd", "/c", "mklink", "/J", self.alias, self.root],
+                               check=True, capture_output=True)
+            except Exception as exc:
+                self.skipTest("当前平台不允许创建目录别名：%s" % exc)
+        self.alias_reg = os.path.join(self.alias, R.REGISTRY_NAME)
+
+    def tearDown(self):
+        shutil.rmtree(self.base, ignore_errors=True)
+
+    def test_register_inside_aliased_root(self):
+        R.init(self.alias)
+        entry = R.register(self.alias_reg, "src/app.py", "script", task="t1")
+        # 记录的是相对路径，不能因为根写法不同而写成 "..\..\real\src\app.py"
+        self.assertEqual(entry["path"], "src/app.py")
+
+    def test_roundtrip_through_aliased_root(self):
+        R.init(self.alias)
+        target = os.path.join(self.alias, "logs", "run.log")
+        R.register(self.alias_reg, target, "log", task="t1")
+        plan = R.build_plan(self.alias_reg)
+        picks = [str(c["no"]) for c in plan["candidates"]]
+        self.assertEqual(len(picks), 1, "别名根下应正常生成候选：%s" % plan)
+
+        result = R.remove(self.alias_reg, picks, yes=True)
+        self.assertEqual(len(result["moved"]), 1)
+        self.assertFalse(os.path.exists(target), "原文件未被移走")
+
+        back = R.restore(self.alias_reg, result["batch"])
+        self.assertEqual(len(back["restored"]), 1)
+        self.assertTrue(os.path.exists(target), "文件未还原")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

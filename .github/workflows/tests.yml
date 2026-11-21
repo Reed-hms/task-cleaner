@@ -8,15 +8,35 @@ on:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.8", "3.12"]
+        # python 3.8 已从 ubuntu-latest(24.04) 和 macos-latest(arm64) 移除，
+        # 需要旧镜像才装得上；新版本统一在新镜像上跑。
+        include:
+          - os: ubuntu-22.04
+            python-version: "3.8"
+          - os: ubuntu-latest
+            python-version: "3.9"
+          - os: ubuntu-latest
+            python-version: "3.12"
+          - os: ubuntu-latest
+            python-version: "3.13"
+          - os: windows-latest
+            python-version: "3.8"
+          - os: windows-latest
+            python-version: "3.12"
+          - os: macos-13
+            python-version: "3.8"
+          - os: macos-latest
+            python-version: "3.12"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Show interpreter and real path
+        run: python -c "import sys, os; print(sys.version); print(sys.platform); print('cwd realpath:', os.path.realpath(os.getcwd()))"
       - name: Run tests
         run: python scripts/test_registry.py -v

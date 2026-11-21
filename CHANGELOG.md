@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.0.1] - 2026-11-21
+
+### Fixed
+- Root-confinement false positive on canonical-path aliases. A project root spelled as an 8.3 short name (`C:\Users\RUNNER~1\...`) or through a symlinked prefix (`/var/...` → `/private/var/...`) made every in-root file look like a path escape, so `register` refused files that were legitimately inside the project. Path comparison is now canonicalised on both sides; entries are still stored as project-relative paths.
+- `ubuntu-latest` (24.04) no longer ships Python 3.8, so the 3.8 job failed at `setup-python` before running anything. The matrix now pins host-specific combinations instead of multiplying every OS by every version.
+
+### Added
+- Two regression tests covering an aliased project root (symlink on POSIX, directory junction on Windows; skipped only where the OS forbids both).
+
 ## [1.0.0] - 2026-11-21
 
 ### Added

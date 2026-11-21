@@ -70,7 +70,12 @@ def human_size(n):
 
 
 def norm(p):
-    return os.path.normcase(os.path.abspath(p))
+    """规范化后用于比较：消解 8.3 短名、符号链接、`/var`→`/private/var` 这类别名。
+
+    必须两侧都走 realpath，否则「短名/软链写法」的项目根与解析后的真实路径
+    会被判成不同目录，导致根内文件被误判越界。
+    """
+    return os.path.normcase(os.path.realpath(os.path.abspath(p)))
 
 
 def is_within(child, parent):
@@ -178,7 +183,7 @@ def guard(path, root):
         return "回收站内的内容不允许再次清理"
     if has_link_component(ap, root):
         return "路径含符号链接/联接点，拒绝递归（只允许手动断链）"
-    parts = os.path.relpath(real, root).split(os.sep)
+    parts = os.path.relpath(real, os.path.realpath(root)).split(os.sep)
     for part in parts:
         if part.lower() in PROTECTED_NAMES:
             return "位于受保护目录：%s" % part
@@ -348,7 +353,8 @@ def register(registry_path, path, kind, task=None, title=None,
         raise CleanError("路径不存在：%s" % target)
     if not is_within(os.path.realpath(target), root):
         raise CleanError("拒绝登记项目根之外的路径（全局项只做统计）：%s" % target)
-    rel = os.path.relpath(target, root).replace(os.sep, "/")
+    rel = os.path.relpath(os.path.realpath(target),
+                          os.path.realpath(root)).replace(os.sep, "/")
     if rel.startswith(".."):
         raise CleanError("拒绝登记越界路径：%s" % rel)
 
