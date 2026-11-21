@@ -1,0 +1,19 @@
+# runtime artifacts produced by task-cleaner itself
+agent-registry.json
+agent-registry.md
+agent-registry.log
+agent-registry.plan.json
+.agent-trash/
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

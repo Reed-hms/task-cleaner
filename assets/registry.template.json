@@ -1,0 +1,9 @@
+{
+  "schema": "agent-registry/1",
+  "type": "root",
+  "project_root": "<绝对路径>",
+  "updated_at": "<ISO8601>",
+  "tasks": [],
+  "entries": [],
+  "batches": []
+}
