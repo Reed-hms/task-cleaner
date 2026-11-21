@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
@@ -12,13 +16,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # python 3.8 已从 ubuntu-latest(24.04) 和 macos-latest(arm64) 移除，
-        # 需要旧镜像才装得上；新版本统一在新镜像上跑。
+        # 只挑「该镜像确实提供该 Python」的组合，避免 setup-python 阶段就红。
+        # ubuntu-latest 已是 26.04，早于 3.11 的版本都不再预置；Windows 仍可装 3.8，
+        # 用它守住 README 承诺的最低版本。macos-13 已退役，不再使用。
         include:
-          - os: ubuntu-22.04
-            python-version: "3.8"
-          - os: ubuntu-latest
-            python-version: "3.9"
           - os: ubuntu-latest
             python-version: "3.12"
           - os: ubuntu-latest
@@ -27,8 +28,6 @@ jobs:
             python-version: "3.8"
           - os: windows-latest
             python-version: "3.12"
-          - os: macos-13
-            python-version: "3.8"
           - os: macos-latest
             python-version: "3.12"
     steps:

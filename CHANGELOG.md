@@ -6,7 +6,7 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ### Fixed
 - Root-confinement false positive on canonical-path aliases. A project root spelled as an 8.3 short name (`C:\Users\RUNNER~1\...`) or through a symlinked prefix (`/var/...` → `/private/var/...`) made every in-root file look like a path escape, so `register` refused files that were legitimately inside the project. Path comparison is now canonicalised on both sides; entries are still stored as project-relative paths.
-- `ubuntu-latest` (24.04) no longer ships Python 3.8, so the 3.8 job failed at `setup-python` before running anything. The matrix now pins host-specific combinations instead of multiplying every OS by every version.
+- `ubuntu-latest` no longer ships the older interpreters (it has moved past 24.04), so a `3.8`/`3.9` job died in `setup-python` before running anything; `macos-13` was retired and left a job queued forever. The matrix is now an explicit list of runner/Python pairs that the image actually provides, so no job waits for a retired runner and none fails during setup.
 
 ### Added
 - Two regression tests covering an aliased project root (symlink on POSIX, directory junction on Windows; skipped only where the OS forbids both).
